@@ -36,18 +36,7 @@ jobs:
             build-essential \
             libssl-dev \
             libayatana-appindicator3-dev \
-            librsvg2-dev \
-            flatpak \
-            flatpak-builder \
-            elfutils
-
-      - name: Flatpak-Runtime einrichten
-        run: |
-          flatpak remote-add --user --if-not-exists flathub \
-            https://flathub.org/repo/flathub.flatpakrepo
-          flatpak install --user -y flathub \
-            org.gnome.Platform//46 \
-            org.gnome.Sdk//46
+            librsvg2-dev
 
       - name: npm install
         run: npm install
@@ -65,9 +54,8 @@ jobs:
 
             | Format | Empfohlen für |
             |---|---|
-            | `.flatpak` | Alle modernen Distros |
-            | `.AppImage` | Universell, keine Installation nötig |
-            | `.deb` | Ubuntu / Debian |
+            | `.AppImage` | Universell — läuft auf jeder Distro ohne Installation |
+            | `.deb` | Ubuntu / Debian / Mint |
           releaseDraft: true
           prerelease: false
-          args: '--bundles deb,appimage,flatpak'
+          args: '--bundles deb,appimage'
