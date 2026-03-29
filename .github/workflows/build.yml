@@ -41,12 +41,14 @@ jobs:
       - name: npm install
         run: npm install
 
+      - name: Frontend bauen (Vite)
+        run: npm run build
+
       - name: Tauri bauen & Release erstellen
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          beforeBuildCommand: npm run build
           tagName: v__VERSION__
           releaseName: 'Letters v__VERSION__'
           releaseBody: |
