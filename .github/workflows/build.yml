@@ -1,69 +1,34 @@
-name: Build & Release Letters
+name: Build Linux
 
-# Manuell auslösen — oder automatisch bei einem Tag wie "v0.2.0"
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
 
 permissions:
   contents: write
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-
-          # ── macOS (Apple Silicon) ────────────────────────────────
-          - platform: macos-latest
-            name: macOS
-            rust_target: aarch64-apple-darwin
-            args: --target aarch64-apple-darwin
-
-          # ── Windows ─────────────────────────────────────────────
-          - platform: windows-latest
-            name: Windows
-            rust_target: ''
-            args: ''
-
-          # ── Linux (AppImage + deb + Flatpak) ────────────────────
-          - platform: ubuntu-22.04
-            name: Linux
-            rust_target: ''
-            args: '--bundles deb,appimage,flatpak'
-
-    runs-on: ${{ matrix.platform }}
-    name: ${{ matrix.name }}
+  build-linux:
+    runs-on: ubuntu-22.04
 
     steps:
-      # ── Code auschecken ────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── Node.js ────────────────────────────────────────────────
       - name: Node.js einrichten
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      # ── Rust ───────────────────────────────────────────────────
       - name: Rust-Toolchain installieren
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.rust_target }}
 
       - name: Rust-Build-Cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
 
-      # ── Linux: System-Abhängigkeiten + Flatpak-Runtime ─────────
-      - name: Linux-Abhängigkeiten installieren
-        if: runner.os == 'Linux'
+      - name: System-Abhängigkeiten installieren
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -76,8 +41,7 @@ jobs:
             flatpak-builder \
             elfutils
 
-      - name: Flatpak-Runtime einrichten (Linux)
-        if: runner.os == 'Linux'
+      - name: Flatpak-Runtime einrichten
         run: |
           flatpak remote-add --user --if-not-exists flathub \
             https://flathub.org/repo/flathub.flatpakrepo
@@ -85,11 +49,9 @@ jobs:
             org.gnome.Platform//46 \
             org.gnome.Sdk//46
 
-      # ── npm-Abhängigkeiten ─────────────────────────────────────
       - name: npm install
         run: npm install
 
-      # ── Tauri bauen & als Draft-Release veröffentlichen ────────
       - name: Tauri bauen & Release erstellen
         uses: tauri-apps/tauri-action@v0
         env:
@@ -99,15 +61,13 @@ jobs:
           tagName: v__VERSION__
           releaseName: 'Letters v__VERSION__'
           releaseBody: |
-            ## Download
+            ## Linux Download
 
-            | Platform | Format |
+            | Format | Empfohlen für |
             |---|---|
-            | **macOS** (Apple Silicon) | `.dmg` |
-            | **Windows** | `.msi` |
-            | **Linux** | `.AppImage` · `.deb` · `.flatpak` |
-
-            > Beim ersten Start auf macOS: Rechtsklick → Öffnen
+            | `.flatpak` | Alle modernen Distros |
+            | `.AppImage` | Universell, keine Installation nötig |
+            | `.deb` | Ubuntu / Debian |
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }}
+          args: '--bundles deb,appimage,flatpak'

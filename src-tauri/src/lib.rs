@@ -1,15 +1,23 @@
+use sys_locale::get_locale;
 use tauri::{
     menu::{AboutMetadataBuilder, MenuBuilder, MenuItem, SubmenuBuilder},
-    Emitter, Manager,
+    Emitter,
 };
+
+fn is_german() -> bool {
+    let locale = get_locale().unwrap_or_default().to_lowercase();
+    locale.starts_with("de") || locale.starts_with("gsw")
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let de = is_german();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .setup(|app| {
+        .setup(move |app| {
             // ── Letters-Menü ──────────────────────────────────────
             let about = AboutMetadataBuilder::new()
                 .version(Some(env!("CARGO_PKG_VERSION")))
@@ -31,19 +39,23 @@ pub fn run() {
                 .build()?;
 
             // ── Datei-Menü ────────────────────────────────────────
-            let open_item =
-                MenuItem::with_id(app, "file-open", "Laden", true, Some("CmdOrCtrl+O"))?;
-            let save_item =
-                MenuItem::with_id(app, "file-save", "Speichern", true, Some("CmdOrCtrl+S"))?;
+            let open_item = MenuItem::with_id(
+                app, "file-open",
+                if de { "Laden" } else { "Open" },
+                true, Some("CmdOrCtrl+O"),
+            )?;
+            let save_item = MenuItem::with_id(
+                app, "file-save",
+                if de { "Speichern" } else { "Save" },
+                true, Some("CmdOrCtrl+S"),
+            )?;
             let save_as_item = MenuItem::with_id(
-                app,
-                "file-save-as",
-                "Speichern als\u{2026}",
-                true,
-                Some("CmdOrCtrl+Shift+S"),
+                app, "file-save-as",
+                if de { "Speichern als\u{2026}" } else { "Save As\u{2026}" },
+                true, Some("CmdOrCtrl+Shift+S"),
             )?;
 
-            let file_menu = SubmenuBuilder::new(app, "Datei")
+            let file_menu = SubmenuBuilder::new(app, if de { "Datei" } else { "File" })
                 .item(&open_item)
                 .separator()
                 .item(&save_item)

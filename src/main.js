@@ -3,6 +3,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import TurndownService from 'turndown'
 import { marked } from 'marked'
+import { t } from './i18n.js'
 
 // ===========================
 // Markdown conversion
@@ -231,7 +232,7 @@ const editor = new Editor({
       orderedList: false,
       listItem: false,
     }),
-    Placeholder.configure({ placeholder: 'Schreib etwas …' }),
+    Placeholder.configure({ placeholder: t.placeholder }),
   ],
   content: '',
   autofocus: true,
@@ -285,7 +286,7 @@ function updateStructure() {
   }
   emptyMsg.classList.remove('visible')
   container.innerHTML = headings.map(h =>
-    `<div class="structure-item level-${h.level}" data-pos="${h.pos}">${h.text || '(ohne Titel)'}</div>`
+    `<div class="structure-item level-${h.level}" data-pos="${h.pos}">${h.text || t.untitledHeading}</div>`
   ).join('')
 
   container.querySelectorAll('.structure-item').forEach(item => {
@@ -460,6 +461,44 @@ async function setupMenuListeners() {
 setupMenuListeners()
 
 // ===========================
+// i18n
+// ===========================
+
+function applyTranslations() {
+  // Toolbar titles
+  document.getElementById('btn-structure').title = t.btnStructure
+  document.getElementById('btn-font-up').title = t.btnFontUp
+  document.getElementById('btn-font-down').title = t.btnFontDown
+  document.getElementById('btn-vibe').title = t.btnVibe
+  document.querySelector('.color-btn-wrapper').title = t.btnColor
+  document.getElementById('btn-theme').title = t.btnTheme
+  document.getElementById('btn-help').title = t.btnHelp
+
+  // Sidebar
+  document.querySelector('.sidebar-header').textContent = t.structureHeader
+  document.getElementById('structure-empty').textContent = t.structureEmpty
+
+  // Help overlay
+  document.querySelector('.help-title').textContent = t.helpTitle
+  const sections = document.querySelectorAll('.help-section')
+  sections[0].textContent = t.sectionFormatting
+  sections[1].textContent = t.sectionTextSize
+  sections[2].textContent = t.sectionDocument
+  sections[3].textContent = t.sectionEdit
+
+  const spans = document.querySelectorAll('.help-row span')
+  const rowKeys = ['bold', 'italic', 'boldItalic', 'heading1', 'heading2', 'headingToText',
+                   'textLarger', 'textSmaller', 'openFile', 'save', 'saveAs', 'toggleStructure',
+                   'undo', 'redo']
+  spans.forEach((span, i) => { if (rowKeys[i]) span.textContent = t[rowKeys[i]] })
+
+  // Translate "Leer"/"Space" in heading kbd labels
+  document.querySelectorAll('.help-row kbd').forEach(kbd => {
+    kbd.textContent = kbd.textContent.replace(/Leer|Space/, t.kbdSpace)
+  })
+}
+
+// ===========================
 // Init
 // ===========================
 
@@ -467,3 +506,4 @@ applyColor('#5b6fae')
 setFontSize(17)
 updateStructure()
 updateModeIndicator()
+applyTranslations()
