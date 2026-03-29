@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Letters</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+
+      <!-- Left Toolbar -->
+      <div class="toolbar-left">
+        <button id="btn-structure" class="toolbar-btn" title="Dokumentstruktur (Cmd+Shift+L)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+            <rect x="2" y="7.25" width="9" height="1.5" rx="0.75" fill="currentColor"/>
+            <rect x="2" y="11.5" width="6" height="1.5" rx="0.75" fill="currentColor"/>
+          </svg>
+        </button>
+
+        <!-- Font Size Controls (one icon gap below structure button) -->
+        <div class="toolbar-icon-gap"></div>
+        <button id="btn-font-up" class="toolbar-btn" title="Text größer (Cmd++)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="1" y="12" font-size="11" font-weight="700" fill="currentColor" font-family="-apple-system,sans-serif">A</text>
+            <text x="9" y="9" font-size="7" font-weight="600" fill="currentColor" font-family="-apple-system,sans-serif">+</text>
+          </svg>
+        </button>
+        <button id="btn-font-down" class="toolbar-btn" title="Text kleiner (Cmd+-)">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="1" y="12" font-size="11" font-weight="700" fill="currentColor" font-family="-apple-system,sans-serif">A</text>
+            <text x="9.5" y="9" font-size="9" font-weight="600" fill="currentColor" font-family="-apple-system,sans-serif">−</text>
+          </svg>
+        </button>
+
+        <div class="toolbar-spacer"></div>
+
+        <!-- Vibe Mode -->
+        <button id="btn-vibe" class="toolbar-btn" title="Vibe-Modus">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 8 C2.5 4.5, 4.5 4.5, 6 8 C7.5 11.5, 9.5 11.5, 11 8 C12.5 4.5, 14 4.5, 15 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          </svg>
+        </button>
+
+        <!-- Color button: native color picker overlaid -->
+        <div class="toolbar-btn color-btn-wrapper" title="Hintergrundfarbe">
+          <div id="color-preview" class="color-preview"></div>
+          <input type="color" id="color-input" value="#5b6fae" />
+        </div>
+
+        <button id="btn-theme" class="toolbar-btn" title="Hell/Dunkel-Modus">
+          <!-- Moon icon (shown in light mode) -->
+          <svg class="icon-moon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13.5 10.5A6.5 6.5 0 015.5 2.5a.5.5 0 00-.6.64A6 6 0 1013.36 11.1a.5.5 0 00-.64-.6z" fill="currentColor"/>
+          </svg>
+          <!-- Sun icon (shown in dark mode) -->
+          <svg class="icon-sun" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+            <circle cx="8" cy="8" r="3" fill="currentColor"/>
+            <line x1="8" y1="1" x2="8" y2="3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="8" y1="12.8" x2="8" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="1" y1="8" x2="3.2" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="12.8" y1="8" x2="15" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="3.05" y1="3.05" x2="4.61" y2="4.61" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="11.39" y1="11.39" x2="12.95" y2="12.95" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="12.95" y1="3.05" x2="11.39" y2="4.61" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="4.61" y1="11.39" x2="3.05" y2="12.95" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <!-- Help button (last) -->
+        <button id="btn-help" class="toolbar-btn" title="Tastaturkürzel">
+          <span class="help-question">?</span>
+        </button>
+      </div>
+
+      <!-- Structure Sidebar -->
+      <div id="structure-sidebar" class="sidebar">
+        <div class="sidebar-header">Struktur</div>
+        <div id="structure-content"></div>
+        <div id="structure-empty" class="structure-empty">Noch keine Überschriften</div>
+      </div>
+
+      <!-- Main Content Area -->
+      <div class="main-content">
+        <!-- Mode Indicator (top right) -->
+        <div id="mode-indicator" class="mode-indicator"></div>
+
+        <!-- Editor Scroll Container -->
+        <div class="editor-scroll">
+          <div class="editor-wrapper">
+            <div id="editor"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Help Overlay -->
+    <div id="help-overlay" class="help-overlay">
+      <div class="help-panel">
+        <div class="help-header">
+          <span class="help-title">Tastaturkürzel</span>
+          <button id="btn-help-close" class="help-close">✕</button>
+        </div>
+        <div class="help-grid">
+          <div class="help-section">Formatierung</div>
+          <div class="help-row"><kbd>⌘ B</kbd><span>Fett</span></div>
+          <div class="help-row"><kbd>⌘ I</kbd><span>Kursiv</span></div>
+          <div class="help-row"><kbd>⌘ D</kbd><span>Fett &amp; Kursiv</span></div>
+          <div class="help-row"><kbd># + Leer</kbd><span>Überschrift 1</span></div>
+          <div class="help-row"><kbd>## + Leer</kbd><span>Überschrift 2</span></div>
+          <div class="help-row"><kbd>⌘ F</kbd><span>Überschrift → Text</span></div>
+
+          <div class="help-section">Textgröße</div>
+          <div class="help-row"><kbd>⌘ +</kbd><span>Text größer</span></div>
+          <div class="help-row"><kbd>⌘ −</kbd><span>Text kleiner</span></div>
+
+          <div class="help-section">Dokument</div>
+          <div class="help-row"><kbd>⌘ O</kbd><span>Datei öffnen</span></div>
+          <div class="help-row"><kbd>⌘ S</kbd><span>Speichern</span></div>
+          <div class="help-row"><kbd>⌘ ⇧ S</kbd><span>Speichern unter</span></div>
+          <div class="help-row"><kbd>⌘ ⇧ L</kbd><span>Struktur ein-/ausblenden</span></div>
+
+          <div class="help-section">Bearbeiten</div>
+          <div class="help-row"><kbd>⌘ Z</kbd><span>Rückgängig</span></div>
+          <div class="help-row"><kbd>⌘ ⇧ Z</kbd><span>Wiederholen</span></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
