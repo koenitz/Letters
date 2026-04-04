@@ -20,47 +20,20 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Rust-Toolchain installieren
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust-Build-Cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri -> target
-
-      - name: System-Abhängigkeiten installieren
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            build-essential \
-            curl \
-            wget \
-            file \
-            libssl-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev
-
       - name: npm install
         run: npm install
 
-      - name: Frontend bauen (Vite)
-        run: npm run build
-
-      - name: Tauri bauen & Release erstellen
-        uses: tauri-apps/tauri-action@v0
+      - name: Electron Builder – Linux
+        run: npx electron-builder --linux AppImage deb
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: v__VERSION__
-          releaseName: 'Letters v__VERSION__'
-          releaseBody: |
-            ## Linux Download
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            | Format | Empfohlen für |
-            |---|---|
-            | `.AppImage` | Universell — läuft auf jeder Distro ohne Installation |
-            | `.deb` | Ubuntu / Debian / Mint |
-          releaseDraft: true
-          prerelease: false
-          args: '--bundles deb,appimage'
+      - name: Release hochladen
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.2.0
+          name: Letters v0.2.0
+          draft: true
+          files: |
+            release/*.AppImage
+            release/*.deb

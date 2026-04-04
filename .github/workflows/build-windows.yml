@@ -20,35 +20,19 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Rust-Toolchain installieren
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust-Build-Cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri -> target
-
       - name: npm install
         run: npm install
 
-      - name: Frontend bauen (Vite)
-        run: npm run build
-
-      - name: Tauri bauen & Release erstellen
-        uses: tauri-apps/tauri-action@v0
+      - name: Electron Builder – Windows
+        run: npx electron-builder --win nsis
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: v__VERSION__
-          releaseName: 'Letters v__VERSION__'
-          releaseBody: |
-            ## Downloads
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            | Plattform | Format | Datei |
-            |---|---|---|
-            | Windows | Installer (`.exe`) | `Letters_x.x.x_x64-setup.exe` |
-            | Linux | AppImage | `letters_x.x.x_amd64.AppImage` |
-            | Linux | Debian | `letters_x.x.x_amd64.deb` |
-          releaseDraft: true
-          prerelease: false
-          args: '--bundles nsis'
+      - name: Release hochladen
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0.2.0
+          name: Letters v0.2.0
+          draft: true
+          files: |
+            release/*.exe
