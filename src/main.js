@@ -200,13 +200,8 @@ function toggleTheme() {
   document.querySelector('.icon-moon').style.display = isDarkMode ? 'none' : 'block'
   document.querySelector('.icon-sun').style.display = isDarkMode ? 'block' : 'none'
 
-  // Re-apply color with new dark/light adjustment
-  if (vibeMode) {
-    // Next vibe tick will pick up the new dark state automatically
-    document.documentElement.style.setProperty('--bg-color', vibeColor())
-  } else {
-    applyColor(userHex, false)
-  }
+  // Re-apply color — vibe loop picks up new dark state automatically on next frame
+  if (!vibeMode) applyColor(userHex, false)
 }
 
 // ===========================
@@ -216,11 +211,43 @@ function toggleTheme() {
 // Cmd+D is handled in the global capture listener below (more reliable in WebKit)
 
 // ===========================
+// Scroll Correction (runs after ProseMirror's own scroll via rAF)
+// ===========================
+
+// 100px editor padding + 40px breathing room below rounded corners
+// ===========================
+// Scroll: keep bottom of editor visible while typing
+// ===========================
+
+const SCROLL_MARGIN = 140
+
+function correctScroll() {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const scrollEl = document.querySelector('.editor-scroll')
+      if (!scrollEl) return
+      const { from } = editor.state.selection
+      const coords = editor.view.coordsAtPos(from)
+      const rect = scrollEl.getBoundingClientRect()
+      const overflow = coords.bottom - (rect.bottom - SCROLL_MARGIN)
+      if (overflow > 0) scrollEl.scrollTop += overflow
+    })
+  })
+}
+
+// ===========================
 // Editor Initialization
 // ===========================
 
 const editor = new Editor({
   element: document.querySelector('#editor'),
+  editorProps: {
+    attributes: {
+      autocorrect: 'off',
+      autocapitalize: 'off',
+      spellcheck: 'true',
+    },
+  },
   extensions: [
     StarterKit.configure({
       heading: { levels: [1, 2] },
@@ -228,16 +255,37 @@ const editor = new Editor({
       codeBlock: false,
       code: false,
       horizontalRule: false,
-      bulletList: false,
       orderedList: false,
-      listItem: false,
     }),
     Placeholder.configure({ placeholder: t.placeholder }),
   ],
   content: '',
   autofocus: true,
-  onUpdate() { updateModeIndicator(); updateStructure() },
-  onSelectionUpdate() { updateModeIndicator() },
+  onUpdate({ editor }) {
+    updateModeIndicator()
+    updateStructure()
+    correctScroll()
+
+    // Bullet list trigger: runs AFTER the character is in the document.
+    // We react to the actual document state, not the key event —
+    // this is the only approach that works reliably in WebKit/Tauri.
+    const { $from, empty } = editor.state.selection
+    if (
+      empty &&
+      $from.parent.type.name === 'paragraph' &&
+      $from.parentOffset === 2 &&
+      ($from.parent.textContent === '- ' || $from.parent.textContent === '\u2013 ')
+    ) {
+      // $from.start() = absolute position of first character in this paragraph.
+      // We delete exactly 2 chars (dash + space) then activate the bullet list.
+      const nodeStart = $from.start()
+      editor.chain()
+        .deleteRange({ from: nodeStart, to: nodeStart + 2 })
+        .toggleBulletList()
+        .run()
+    }
+  },
+  onSelectionUpdate() { updateModeIndicator(); correctScroll() },
 })
 
 // ===========================
@@ -291,61 +339,56 @@ function updateStructure() {
 
   container.querySelectorAll('.structure-item').forEach(item => {
     item.addEventListener('click', () => {
-      editor.chain().focus().setTextSelection(parseInt(item.dataset.pos, 10) + 1).run()
+      const pos = parseInt(item.dataset.pos, 10)
+      // Resolve the DOM node at this ProseMirror position and scroll it into view
+      const domNode = editor.view.nodeDOM(pos)
+      if (domNode) {
+        domNode.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+      // Also set cursor into the heading
+      editor.chain().focus().setTextSelection(pos + 1).run()
     })
   })
 }
 
 // ===========================
-// File Operations (Tauri)
+// File Operations (Electron)
 // ===========================
 
 async function openFile() {
   try {
-    const { open } = await import('@tauri-apps/plugin-dialog')
-    const { readTextFile } = await import('@tauri-apps/plugin-fs')
-    const selected = await open({
-      multiple: false,
-      filters: [{ name: 'Markdown', extensions: ['md', 'markdown', 'txt'] }],
-    })
-    if (!selected) return
-    const text = await readTextFile(selected)
-    editor.commands.setContent(await marked.parse(text), false)
-    currentFilePath = selected
+    const result = await window.electronAPI.openFile()
+    if (!result) return
+    const html = await marked.parse(result.content)
+    editor.commands.setContent(html, false)
+    currentFilePath = result.filePath
   } catch (err) { console.error('Öffnen fehlgeschlagen:', err) }
 }
 
 async function saveFile() {
-  currentFilePath ? await writeMarkdownTo(currentFilePath) : await saveFileAs()
+  try {
+    const content = turndown.turndown(editor.getHTML())
+    const savedPath = await window.electronAPI.saveFile(currentFilePath, content)
+    if (savedPath) currentFilePath = savedPath
+  } catch (err) { console.error('Speichern fehlgeschlagen:', err) }
 }
 
 async function saveFileAs() {
   try {
-    const { save } = await import('@tauri-apps/plugin-dialog')
-    const path = await save({
-      filters: [{ name: 'Markdown', extensions: ['md'] }],
-      defaultPath: 'Dokument.md',
-    })
-    if (!path) return
-    await writeMarkdownTo(path)
-    currentFilePath = path
+    const content = turndown.turndown(editor.getHTML())
+    const savedPath = await window.electronAPI.saveFileAs(content)
+    if (savedPath) currentFilePath = savedPath
   } catch (err) { console.error('Speichern fehlgeschlagen:', err) }
-}
-
-async function writeMarkdownTo(path) {
-  try {
-    const { writeTextFile } = await import('@tauri-apps/plugin-fs')
-    await writeTextFile(path, turndown.turndown(editor.getHTML()))
-  } catch (err) { console.error('Schreiben fehlgeschlagen:', err) }
 }
 
 // ===========================
 // Global Keyboard Shortcuts
 // ===========================
 
+
 document.addEventListener('keydown', async (e) => {
   const mod = e.metaKey || e.ctrlKey
-  if (!mod) return
+  if (!mod) return  // only handle modifier combos — never intercept plain keys like Space or '-'
 
   // Cmd+F in heading → paragraph
   if (e.key === 'f' && editor.isActive('heading')) {
@@ -393,7 +436,7 @@ document.addEventListener('keydown', async (e) => {
 
   // Cmd+Shift+L → structure sidebar
   if (e.shiftKey && e.key === 'l') { e.preventDefault(); toggleSidebar(); return }
-}, true)
+})
 
 // ===========================
 // Sidebar
@@ -445,20 +488,14 @@ document.querySelector('.editor-wrapper').addEventListener('click', (e) => {
 })
 
 // ===========================
-// macOS Menü-Events
+// Menu Events (Electron)
 // ===========================
 
-async function setupMenuListeners() {
-  try {
-    const { listen } = await import('@tauri-apps/api/event')
-    listen('menu:open',    () => openFile())
-    listen('menu:save',    () => saveFile())
-    listen('menu:save-as', () => saveFileAs())
-  } catch {
-    // Nicht in Tauri-Umgebung – kein Problem
-  }
+if (window.electronAPI) {
+  window.electronAPI.onMenuOpen(()   => openFile())
+  window.electronAPI.onMenuSave(()   => saveFile())
+  window.electronAPI.onMenuSaveAs(() => saveFileAs())
 }
-setupMenuListeners()
 
 // ===========================
 // i18n
@@ -488,8 +525,8 @@ function applyTranslations() {
 
   const spans = document.querySelectorAll('.help-row span')
   const rowKeys = ['bold', 'italic', 'boldItalic', 'heading1', 'heading2', 'headingToText',
-                   'textLarger', 'textSmaller', 'openFile', 'save', 'saveAs', 'toggleStructure',
-                   'undo', 'redo']
+                   'bulletList', 'textLarger', 'textSmaller', 'openFile', 'save', 'saveAs',
+                   'toggleStructure', 'undo', 'redo']
   spans.forEach((span, i) => { if (rowKeys[i]) span.textContent = t[rowKeys[i]] })
 
   // Translate "Leer"/"Space" in heading kbd labels

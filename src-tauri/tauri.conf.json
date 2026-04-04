@@ -1,6 +1,6 @@
 {
   "productName": "Letters",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "identifier": "io.letters.app",
   "build": {
     "frontendDist": "../dist",

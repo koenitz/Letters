@@ -4,7 +4,7 @@
 
 :root {
   --bg-color: #5b6fae;
-  --toolbar-width: 52px;
+  --toolbar-width: 76px;
   --sidebar-width: 220px;
   --editor-max-width: 680px;
   --transition: 0.2s ease;
@@ -50,7 +50,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 14px 0 16px;
+  padding: 52px 0 16px;
   gap: 6px;
   flex-shrink: 0;
   z-index: 20;
@@ -166,6 +166,7 @@ body {
   flex-direction: column;
 }
 
+
 .sidebar.open {
   width: var(--sidebar-width);
 }
@@ -176,7 +177,7 @@ body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.45);
-  padding: 16px 16px 8px;
+  padding: 62px 16px 8px;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -313,7 +314,7 @@ body {
 #editor {
   background: rgba(255, 255, 255, 0.88);
   border-radius: 14px;
-  padding: 56px 72px 80px;
+  padding: 56px 72px 100px;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.04),
     0 8px 24px rgba(0, 0, 0, 0.10),
@@ -395,6 +396,25 @@ body.dark .ProseMirror h2 {
 
 .ProseMirror p {
   margin-bottom: 0;
+}
+
+.ProseMirror ul {
+  padding-left: 1.5em;
+  margin: 0.3em 0;
+}
+
+.ProseMirror li {
+  line-height: 1.55;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.ProseMirror li + li {
+  margin-top: 0.05em;
+}
+
+.ProseMirror li p {
+  margin: 0;
 }
 
 .ProseMirror strong {
