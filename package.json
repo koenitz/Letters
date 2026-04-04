@@ -2,6 +2,10 @@
   "name": "letters",
   "version": "0.2.0",
   "description": "Letters — A focused writing app",
+  "author": {
+    "name": "Christopher Könitz",
+    "email": "christopher@koenitz.io"
+  },
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on http://localhost:1420 && electron .\"",
@@ -51,6 +55,7 @@
     },
     "linux": {
       "icon": "src-tauri/icons/icon.png",
+      "category": "Office",
       "target": ["AppImage", "deb"]
     }
   }
